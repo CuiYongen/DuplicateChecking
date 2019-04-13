@@ -62,7 +62,7 @@ def test_result_all():
 @app.route('/test/generate')
 def test_generate():
     content = web_mod.generate(uid='')
-    return render_template('result.html', uid='0010', content=content)
+    return render_template('result.html', uid='1', content=content)
     # return render_template('test.html', func_name='generate')
     
 @app.route('/test/read')

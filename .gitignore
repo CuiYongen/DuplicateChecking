@@ -2,3 +2,4 @@
 app/dupl_ckg/db_data.npy
 app/dupl_ckg/db_hash.npy
 *.txt
+venv/

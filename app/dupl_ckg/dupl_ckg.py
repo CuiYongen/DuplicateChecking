@@ -97,7 +97,7 @@ def db_build():
         count += 1
         txt = np.loadtxt(codecs.open(os.path.join(prepath, name), encoding=u'gb18030',errors='ignore')
                         , dtype=np.str, delimiter="\r\n", encoding='gb18030')
-        txt = np.char.replace(txt, '\\u3000', '')
+        txt = np.char.replace(txt, '\\u3000', '')  # 去掉所有空格
         txt = np.char.replace(txt, '\\u3000\\u3000', '')    
         for paragraph in txt:
             if paragraph == '' or paragraph == ' ' or paragraph.find(' ') != -1 or paragraph[0].isdigit():
@@ -139,6 +139,7 @@ def get_db_doc_idx(db_data):
         else:
             db_doc_idx[arr[0]].append(i)
     # print("get_db_doc_idx() executed!")
+    # print(db_doc_idx, '\n')
     return db_doc_idx
 
 # 单篇与数据库相似度
@@ -156,8 +157,11 @@ def get_sim(paper_name, db_doc_idx, db_hash, hamming_dis_threshold=5):
                 item_result = hammingDis(db_hash[a_idx], db_hash[b_idx])
                 if item_result <= hamming_dis_threshold:
                     item.append([a_idx, b_idx])
+            # print('\na_key: ', a_key, '\nb_key: ', b_key, '\ndb_doc_idx[a_key]: ', db_doc_idx[a_key], '\ndb_doc_idx[b_key]: ', db_doc_idx[b_key])
             if len(item) > 0:
                 sim_count += len(item)
+                print(len(item), '\n')
+            # print('\na_idx: ', a_idx, '\titem: ', item, '\tsim_count: ', sim_count)
         if sim_count > 0:
             result_dict[b_key] = sim_count
     
@@ -184,21 +188,6 @@ def get_sim_details(paper_name_a, paper_name_b,
     
     result_dict = OrderedDict(sorted(result_dict.items()))
     
-    # full_path = GENERATE_PATH + '\\' + target_file
-    # file = open(full_path, 'a')
-    
-    # if print_details == 'short':
-        # print('paper a:', paper_name_a, '\npaper b:', paper_name_b, '\n', file=file)  # 打印标题
-        # for k in result_dict.keys():
-            # print('hamming distance:', str(k), file=file)
-            # for a, b in result_dict[k]:
-                # print('-'*100, file=file)
-                # print('\ta:\t', a[1], file=file)
-                # print('\tb:\t', b[1], file=file)
-            # print('', file=file)
-    
-    # file = file.close()
-    
     # print("get_sim_details() executed!")
     return result_dict
 
@@ -221,7 +210,7 @@ def result_sim(paper_name, GENERATE_PATH, target_file):
     
     global db_doc_idx # 全局变量
     db_doc_idx = get_db_doc_idx(db_data)
-    paper_name = '重庆有线广告管理系统的设计与实施GS1321154刘冉.txt'
+    paper_name = '科协学会专家数据库的设计与实施-第3次修改.txt'
     result_dict = get_sim(paper_name, db_doc_idx, db_hash, hamming_dis_threshold=5)
     
     full_path = GENERATE_PATH + '\\' + target_file
@@ -244,6 +233,7 @@ def result_details(paper_name_a, paper_name_b, GENERATE_PATH, target_file):
     
     global db_doc_idx  # 全局变量
     db_doc_idx = get_db_doc_idx(db_data)
+    print('\ndb_doc_idx: \n', db_doc_idx[0], '\n')  # 打印测试
     result_dict_details = get_sim_details(paper_name_a, paper_name_b, db_doc_idx, db_hash, db_data, hamming_dis_threshold=6)
     
     full_path = GENERATE_PATH + '\\' + target_file
@@ -270,7 +260,7 @@ def result_details(paper_name_a, paper_name_b, GENERATE_PATH, target_file):
 def result_all(paper_name, GENERATE_PATH, target_file_name):
     print("result_details() starting …")
     
-    paper_name = '重庆有线广告管理系统的设计与实施GS1321154刘冉.txt'
+    paper_name = '科协学会专家数据库的设计与实施-第3次修改.txt'
     result_dict = result_sim(paper_name, GENERATE_PATH, target_file_name) 
     full_path = GENERATE_PATH + '\\' + target_file_name
     

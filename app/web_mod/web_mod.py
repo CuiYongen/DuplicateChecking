@@ -59,7 +59,7 @@ def generate(uid):
     print(os.getcwd())
     # os.chdir(r'C:\Users\Administrator\Documents\duplicateChecking\Flask\result')	# 切换到 result 文件夹，保存查重结果
     GENERATE_PATH = r'C:\Users\Administrator\Documents\duplicateChecking\Flask\result'
-    uid = "0010"
+    uid = "test"
     result_file_name = uid + '.txt'
     
     # dupl_ckg.result_sim('', GENERATE_PATH, result_file)
