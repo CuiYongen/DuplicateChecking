@@ -1,0 +1,20 @@
+{% extends 'mdb_base.html' %}
+{% block content %}
+<form action="{{ url_for('mdb_index') }}" method=POST class=add-entry>
+    <h2>todo list:</h2>
+       <textarea name=content rows=2 cols=20></textarea>
+       <input type=submit value=submit>
+</form>
+<ul>
+    {% for todo in todos %}
+    <li><p>{{todo.content}}
+        <a href="{{ url_for('mdb_delete',content=todo.content)}}">delete</a>&nbsp&nbsp<a href="{{ url_for('mdb_finish',content=todo.content)}}">done</a></p>
+        {%- if todo.is_finished -%}
+                <p>finished</p>
+        {%- else-%}
+                <p>unfinished</p>
+        {%- endif %}
+    </li>
+    {% endfor %}
+</ul>
+{% endblock %}

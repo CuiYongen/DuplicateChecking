@@ -10,6 +10,15 @@ import os
 import jieba
 import jieba.analyse
 
+import sys
+sys.path.append(r"C:\Users\Administrator\Documents\duplicateChecking\Flask\app\flk_mdb")
+from flk_mdb import *
+import pymongo
+from time import time
+
+mongo = pymongo.MongoClient('127.0.0.1', 27017)
+mdb = mongo.test
+
 db_data = []
 db_hash = []
 db_doc_idx = {}
@@ -105,8 +114,9 @@ def db_build():
             strKeyWord, shash = simhash(paragraph)
             if strKeyWord == '':
                 continue
-            db_data.append([name, paragraph, strKeyWord])
-            db_hash.append(shash)
+            # db_data.append([name, paragraph, strKeyWord])
+            # db_hash.append(shash)
+            # mdb.test0.insert(Paper.create_mdb(name, paragraph, strKeyWord, shash))  # 保存到 MongoDB
     print("db_build() executed!")
 
 '''
@@ -233,7 +243,7 @@ def result_details(paper_name_a, paper_name_b, GENERATE_PATH, target_file):
     
     global db_doc_idx  # 全局变量
     db_doc_idx = get_db_doc_idx(db_data)
-    print('\ndb_doc_idx: \n', db_doc_idx[0], '\n')  # 打印测试
+    print('\ndb_doc_idx: \n', db_doc_idx, '\n')  # 打印测试
     result_dict_details = get_sim_details(paper_name_a, paper_name_b, db_doc_idx, db_hash, db_data, hamming_dis_threshold=6)
     
     full_path = GENERATE_PATH + '\\' + target_file
@@ -287,7 +297,7 @@ def result_all(paper_name, GENERATE_PATH, target_file_name):
 
 def init():
     print("init() starting …")
-    # db_build()  # 仅在论文库更新时再次 db_build() 和 db_save() 即可
+    db_build()  # 仅在论文库更新时再次 db_build() 和 db_save() 即可
     # db_save()
-    db_load()
+    # db_load()
     print("init() executed!")
