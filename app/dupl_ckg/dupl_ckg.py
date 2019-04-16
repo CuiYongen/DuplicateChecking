@@ -14,7 +14,7 @@ import sys
 sys.path.append(r"C:\Users\Administrator\Documents\duplicateChecking\Flask\app\flk_mdb")
 from flk_mdb import *
 import pymongo
-from time import time
+import time
 
 mongo = pymongo.MongoClient('127.0.0.1', 27017)
 mdb = mongo.test
@@ -51,19 +51,26 @@ def string_hash(source):
     return str(x)
     
 def simhash(content):
+    # clock_0 = time.time()  # 测试时间
     seg = jieba.cut(content)  # 分词
+    # file_tmp = open(r'C:\Users\Administrator\Documents\duplicateChecking\Flask\app\dupl_ckg\simhash_time.txt', 'a')
+    # clock_1 = time.time()
+    # print(content, '\nt1: ', clock_1-clock_0, file=file_tmp)
     jieba.analyse.set_stop_words('./app/dupl_ckg/stopwords.txt')  # 去除停用词
+    # clock_2 = time.time()
+    # print('t2: ', clock_2-clock_1, file=file_tmp)
     keyWord = jieba.analyse.extract_tags(
-       '|'.join(seg), topK=20, withWeight=True, allowPOS=())
-        # 在这里对 jieba 的 tfidf.py 进行了修改
-        # 将 tags = sorted(freq.items(), key=itemgetter(1), reverse=True) 修改成 tags = sorted(freq.items(), key=itemgetter(1,0), reverse=True)
-        # 即先按照权重排序，再按照词排序
+       '|'.join(seg), topK=20, withWeight=True, allowPOS=())  # 根据 TD-IDF 提取关键词，并按照权重排序
+    # clock_3 = time.time()
+    # print('t3: ', clock_3-clock_2, file=file_tmp)
     keyList = []
-    strKeyWord = ''
+    # strKeyWord = ''
     keyCount = 0
     for feature, weight in keyWord:  # 对关键词进行 hash
-        strKeyWord += str(feature) + ':' + str(weight) + ' '
+        # strKeyWord += str(feature) + ':' + str(weight) + ' '
         weight = int(weight * 20)
+        # file_tmp = open(r'C:\Users\Administrator\Documents\duplicateChecking\Flask\app\dupl_ckg\simhash_strKeyWord.txt', 'a')
+        # print('【feature: ', feature, '】', file = file_tmp)
         feature = string_hash(feature)
         temp = []
         for i in feature:
@@ -74,11 +81,18 @@ def simhash(content):
        # print(temp)
         keyList.append(temp)
         keyCount += 1
-        if keyCount <= 5:
-            strKeyWord = ''
+        # if keyCount <= 5:
+            # strKeyWord = ''  # 怀疑是为了减少 .npy 大小
+    if keyCount < 6:
+        return ''  # 少于5个词放弃这个句子
+        # print('【hash: ', feature, '】', file = file_tmp)  # 打印测试
+        # file_tmp.close()
+    # clock_4 = time.time()
+    # print('t4: ', clock_4-clock_3, file=file_tmp)
     list1 = np.sum(np.array(keyList), axis=0)
     if(keyList == []):  # 编码读不出来
-        return strKeyWord, '00'
+        # return strKeyWord, '00'
+        return '00'
     simhash = ''
     for i in list1:  # 权值转换成 hash 值
         if(i > 0):
@@ -86,7 +100,11 @@ def simhash(content):
         else:
             simhash = simhash + '0'
     # print("simhash() executed!")
-    return strKeyWord, simhash
+    # clock_5 = time.time()
+    # print('t5: ', clock_5-clock_4, '\nstrKeyWord: ', strKeyWord, '\nsimhash: ', simhash, '\n\n', file=file_tmp)
+    # file_tmp.close()
+    # return strKeyWord, simhash
+    return simhash
 
     
 '''
@@ -102,21 +120,30 @@ def db_build():
     db_hash = []
     count = 0
     for name in doc_name:
+        # file_tmp = open(r'C:\Users\Administrator\Documents\duplicateChecking\Flask\app\dupl_ckg\simhash_time.txt', 'a')
+        # clock_0 = time.time()
         print(count, '\t', name)
         count += 1
         txt = np.loadtxt(codecs.open(os.path.join(prepath, name), encoding=u'gb18030',errors='ignore')
                         , dtype=np.str, delimiter="\r\n", encoding='gb18030')
-        txt = np.char.replace(txt, '\\u3000', '')  # 去掉所有空格
-        txt = np.char.replace(txt, '\\u3000\\u3000', '')    
+        txt = np.char.replace(txt, '\u3000', '')  # 去掉全角空格和制表符
+        txt = np.char.replace(txt, '\t', '')
         for paragraph in txt:
-            if paragraph == '' or paragraph == ' ' or paragraph.find(' ') != -1 or paragraph[0].isdigit():
+            if paragraph == '' or paragraph == ' ' or paragraph[0].isdigit():
                 continue
-            strKeyWord, shash = simhash(paragraph)
-            if strKeyWord == '':
+            # strKeyWord, shash = simhash(paragraph)
+            shash = simhash(paragraph)
+            # if strKeyWord == '':
+                # continue
+            if shash == '':
                 continue
             # db_data.append([name, paragraph, strKeyWord])
-            # db_hash.append(shash)
+            db_data.append([name, paragraph])
+            db_hash.append(shash)
             # mdb.test0.insert(Paper.create_mdb(name, paragraph, strKeyWord, shash))  # 保存到 MongoDB
+            # mdb.test0.insert(Paper.create_mdb(name, paragraph, shash))
+        # clock_1 = time.time()
+        # print(name, '\n【T】: ', clock_1-clock_0, '\n', file=file_tmp)
     print("db_build() executed!")
 
 '''
@@ -144,6 +171,7 @@ def get_db_doc_idx(db_data):
     db_doc_idx = {}  # 初始化 db_doc_idx
     for i in range(len(db_data)): 
         arr = db_data[i]
+        # print(' / ', arr, ' / ')  # 打印测试
         if arr[0] not in db_doc_idx.keys():
             db_doc_idx[arr[0]] = [i]
         else:
@@ -170,9 +198,8 @@ def get_sim(paper_name, db_doc_idx, db_hash, hamming_dis_threshold=5):
             # print('\na_key: ', a_key, '\nb_key: ', b_key, '\ndb_doc_idx[a_key]: ', db_doc_idx[a_key], '\ndb_doc_idx[b_key]: ', db_doc_idx[b_key])
             if len(item) > 0:
                 sim_count += len(item)
-                print(len(item), '\n')
             # print('\na_idx: ', a_idx, '\titem: ', item, '\tsim_count: ', sim_count)
-        if sim_count > 0:
+        if sim_count > 5:  # 只保存重复超过5句的文章
             result_dict[b_key] = sim_count
     
     result_dict = OrderedDict(sorted(result_dict.items(), key=lambda t: t[1], reverse=True))
@@ -243,7 +270,7 @@ def result_details(paper_name_a, paper_name_b, GENERATE_PATH, target_file):
     
     global db_doc_idx  # 全局变量
     db_doc_idx = get_db_doc_idx(db_data)
-    print('\ndb_doc_idx: \n', db_doc_idx, '\n')  # 打印测试
+    # print('\ndb_doc_idx: \n', db_doc_idx, '\n')  # 打印测试
     result_dict_details = get_sim_details(paper_name_a, paper_name_b, db_doc_idx, db_hash, db_data, hamming_dis_threshold=6)
     
     full_path = GENERATE_PATH + '\\' + target_file
@@ -298,6 +325,6 @@ def result_all(paper_name, GENERATE_PATH, target_file_name):
 def init():
     print("init() starting …")
     db_build()  # 仅在论文库更新时再次 db_build() 和 db_save() 即可
-    # db_save()
-    # db_load()
+    db_save()
+    db_load()
     print("init() executed!")

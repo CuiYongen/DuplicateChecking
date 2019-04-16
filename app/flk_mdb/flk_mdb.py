@@ -15,11 +15,12 @@ class Todo(object):
 
 class Paper(object):
     @classmethod
-    def create_mdb(cls, name, paragraph, strKeyWord, shash):
+    # def create_mdb(cls, name, paragraph, strKeyWord, shash):
+    def create_mdb(cls, name, paragraph, shash):
         return {
             'name': name,
             'paragraph': paragraph,
-            'strKeyWord': strKeyWord,
+            # 'strKeyWord': strKeyWord,
             'shash': shash,
             'created_at': time(),
         }
