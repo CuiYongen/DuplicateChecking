@@ -37,11 +37,16 @@ def upload_file():
 '''
 
 def read_file():
-    file = open(r'C:\Users\Administrator\Documents\duplicateChecking\Flask\result\0010.txt')
-    content = ''
+    file = open(r"C:/Users/Administrator/Documents/duplicateChecking/Flask/result/科协学会专家数据库的设计与实施-第4次修改（降重）.txt", "rb")
+    # content = ''
+    # for line in file:
+    #     content += line
+    #     content += '<br>'
+    file_tmp = open(r'C:/Users/Administrator/Documents/duplicateChecking/Flask/app/dupl_ckg/paragraph.txt', 'a', encoding='gb18030')
     for line in file:
-        content += line
-        content += '<br>'
+        print('==paragragh: ', line, '==', file=file_tmp)
+    file_tmp.close()
+    content = file.readlines()
     file.close()
     return content
     
@@ -51,15 +56,15 @@ def read_file():
 '''
 
 import sys
-sys.path.append(r"C:\Users\Administrator\Documents\duplicateChecking\Flask\app\dupl_ckg")
+sys.path.append(r"C:/Users/Administrator/Documents/duplicateChecking/Flask/app/dupl_ckg")
 import dupl_ckg
 
 def generate(uid):
     
     print(os.getcwd())
-    # os.chdir(r'C:\Users\Administrator\Documents\duplicateChecking\Flask\result')	# 切换到 result 文件夹，保存查重结果
-    GENERATE_PATH = r'C:\Users\Administrator\Documents\duplicateChecking\Flask\result'
-    uid = "test"
+    # os.chdir(r'C:/Users/Administrator/Documents/duplicateChecking/Flask/result')	# 切换到 result 文件夹，保存查重结果
+    GENERATE_PATH = r'C:/Users/Administrator/Documents/duplicateChecking/Flask/result'
+    uid = "1"
     result_file_name = uid + '.txt'
     
     # dupl_ckg.result_sim('', GENERATE_PATH, result_file)
@@ -67,5 +72,7 @@ def generate(uid):
     content = dupl_ckg.result_all('', GENERATE_PATH, result_file_name)
     
     return content
-    
 
+'''
+    测试 MongoDB
+'''

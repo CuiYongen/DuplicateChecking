@@ -6,17 +6,17 @@
 
 import codecs
 import numpy as np
-import os
 import jieba
 import jieba.analyse
-
+import os
 import sys
-sys.path.append(r"C:\Users\Administrator\Documents\duplicateChecking\Flask\app\flk_mdb")
+sys.path.append(r"C:/Users/Administrator/Documents/duplicateChecking/Flask/app/flk_mdb")
 from flk_mdb import *
 import pymongo
 import time
 
 mongo = pymongo.MongoClient('127.0.0.1', 27017)
+# mdb = mongo.test
 mdb = mongo.test
 
 db_data = []
@@ -52,7 +52,7 @@ def string_hash(source):
     
 def simhash(content):
     # clock_0 = time.time()  # 测试时间
-    seg = jieba.cut(content)  # 分词
+    # seg = jieba.cut(content)  # 分词
     # file_tmp = open(r'C:\Users\Administrator\Documents\duplicateChecking\Flask\app\dupl_ckg\simhash_time.txt', 'a')
     # clock_1 = time.time()
     # print(content, '\nt1: ', clock_1-clock_0, file=file_tmp)
@@ -60,31 +60,31 @@ def simhash(content):
     # clock_2 = time.time()
     # print('t2: ', clock_2-clock_1, file=file_tmp)
     keyWord = jieba.analyse.extract_tags(
-       '|'.join(seg), topK=20, withWeight=True, allowPOS=())  # 根据 TD-IDF 提取关键词，并按照权重排序
+        # '|'.join(seg), topK=20, withWeight=True, allowPOS=())  # 根据 TD-IDF 提取关键词，并按照权重排序
+        content, topK=20, withWeight=True, allowPOS=())
+    # file_tmp = open(r'C:/Users/Administrator/Documents/duplicateChecking/Flask/app/dupl_ckg/testenter.txt', 'a'))
+    # print('=len(keyWord): ', len(keyWord), '==content: ', content, '==keyWord: ', keyWord, '=', file=file_tmp)
+    # file_tmp.close()
+    if len(keyWord) < 6:
+        return ''  # 少于5个词放弃这个句子
     # clock_3 = time.time()
     # print('t3: ', clock_3-clock_2, file=file_tmp)
     keyList = []
     # strKeyWord = ''
-    keyCount = 0
     for feature, weight in keyWord:  # 对关键词进行 hash
         # strKeyWord += str(feature) + ':' + str(weight) + ' '
         weight = int(weight * 20)
         # file_tmp = open(r'C:\Users\Administrator\Documents\duplicateChecking\Flask\app\dupl_ckg\simhash_strKeyWord.txt', 'a')
         # print('【feature: ', feature, '】', file = file_tmp)
-        feature = string_hash(feature)
+        feature = string_hash(feature)      
         temp = []
         for i in feature:
             if(i == '1'):
                 temp.append(weight)
             else:
                 temp.append(-weight)
-       # print(temp)
+        # print(temp)
         keyList.append(temp)
-        keyCount += 1
-        # if keyCount <= 5:
-            # strKeyWord = ''  # 怀疑是为了减少 .npy 大小
-    if keyCount < 6:
-        return ''  # 少于5个词放弃这个句子
         # print('【hash: ', feature, '】', file = file_tmp)  # 打印测试
         # file_tmp.close()
     # clock_4 = time.time()
@@ -112,24 +112,32 @@ def simhash(content):
 '''
     
 def db_build():
+    clock_0 = time.time()
     print("db_build() starting …")
     prepath = './docs'
     doc_name = os.listdir(prepath)
-    global db_data, db_hash  # 全局变量
-    db_data = []
-    db_hash = []
-    count = 0
+    # global db_data, db_hash  # 全局变量
+    # db_data = []
+    # db_hash = []
+    # doc_name_idx = []
+    # count = 0
     for name in doc_name:
         # file_tmp = open(r'C:\Users\Administrator\Documents\duplicateChecking\Flask\app\dupl_ckg\simhash_time.txt', 'a')
         # clock_0 = time.time()
-        print(count, '\t', name)
-        count += 1
+        # print(count, '\t', name)
+        # count += 1
+        mdb.idx.insert(Paper.create_idx(name))
+        # doc_name_idx.append(name)
         txt = np.loadtxt(codecs.open(os.path.join(prepath, name), encoding=u'gb18030',errors='ignore')
                         , dtype=np.str, delimiter="\r\n", encoding='gb18030')
-        txt = np.char.replace(txt, '\u3000', '')  # 去掉全角空格和制表符
-        txt = np.char.replace(txt, '\t', '')
+        # txt = np.char.replace(txt, '\u3000', '')  # 去掉全角空格和制表符
+        # txt = np.char.replace(txt, '\t', '')
         for paragraph in txt:
-            if paragraph == '' or paragraph == ' ' or paragraph[0].isdigit():
+            paragraph = paragraph.replace('\u3000', '').replace('\t', '').replace('  ', '').replace('\r', ' ')  # 去除全角空格和制表符，换行替换为空格
+            # file_tmp = open(r'C:/Users/Administrator/Documents/duplicateChecking/Flask/app/dupl_ckg/paragraph.txt', 'a', encoding='gb18030')
+            # print('【paragragh: ', paragraph, '】', file=file_tmp)
+            # if paragraph == '' or paragraph == ' ' or paragraph[0].isdigit():
+            if paragraph == '' or paragraph == ' ':
                 continue
             # strKeyWord, shash = simhash(paragraph)
             shash = simhash(paragraph)
@@ -137,15 +145,19 @@ def db_build():
                 # continue
             if shash == '':
                 continue
-            # db_data.append([name, paragraph, strKeyWord])
-            db_data.append([name, paragraph])
-            db_hash.append(shash)
+            # db_data.append([name, paragraph, strKeyWord]) 
+            # db_data.append([name, paragraph])
+            # db_data.append([count, paragraph])
+            # db_hash.append(shash)
+            # print('【hash: ', shash, '】', file=file_tmp)
+            # file_tmp.close()
             # mdb.test0.insert(Paper.create_mdb(name, paragraph, strKeyWord, shash))  # 保存到 MongoDB
-            # mdb.test0.insert(Paper.create_mdb(name, paragraph, shash))
+            mdb.all.insert(Paper.create_mdb(name, paragraph, shash))
         # clock_1 = time.time()
         # print(name, '\n【T】: ', clock_1-clock_0, '\n', file=file_tmp)
     print("db_build() executed!")
-
+    clock_1 = time.time()
+    print('【time_build: ', clock_1-clock_0, '】')
 '''
     存储数据库至本地，以便之后使用
 '''
@@ -167,11 +179,22 @@ import numpy as np
 
 def get_db_doc_idx(db_data):
     # print("get_db_doc_idx() starting …")
+
+    # doc_name_idx = []
+    # doc_name = os.listdir('./docs')
+    # count = 0
+    # for name in doc_name:
+    #     doc_name_idx.append(name)
+    #     count += 1
+
     global db_doc_idx  # 全局变量
     db_doc_idx = {}  # 初始化 db_doc_idx
     for i in range(len(db_data)): 
         arr = db_data[i]
         # print(' / ', arr, ' / ')  # 打印测试
+        # file_tmp = open(r'C:/Users/Administrator/Documents/duplicateChecking/Flask/app/dupl_ckg/get_db_doc_idx.txt', 'a')
+        # print('【arr: ', arr, '】【[i]: ', [i], '】【i: ', i, '】', file=file_tmp)
+        # file_tmp.close()
         if arr[0] not in db_doc_idx.keys():
             db_doc_idx[arr[0]] = [i]
         else:
@@ -181,10 +204,67 @@ def get_db_doc_idx(db_data):
     return db_doc_idx
 
 # 单篇与数据库相似度
-def get_sim(paper_name, db_doc_idx, db_hash, hamming_dis_threshold=5):
-    # print("get_sim() starting …")
-    a_key = paper_name
+def get_sim(paper_name, hamming_dis_threshold):
+    print("get_sim() starting …")
+
+    paper_name = '烟花爆竹流向监控平台的设计与实施-第4次修改（隆重1).txt'
+    a_name = paper_name
+    TEMP_name_idx = []
+    name_idx = mdb.idx.find({"name":{"$ne":a_name}})
+    Paper.save_to_array(TEMP_name_idx, name_idx, 'name')  # 保存结果
+    # for i in name_idx:
+        # TEMP_name_idx.append(i["name"])
+    # for i in name_idx:
+        # TEMP_name_idx.append(i["name"])
+    # for i in TEMP_name_idx:
+    #     print(i)
+    for b_name in TEMP_name_idx:
+        sim_count = 0
+        item_a = item_b = []
+        TEMP_a_parag = TEMP_a_shash = []
+        a_parag = mdb.all.find({"name":a_name})
+        Paper.save_to_array(TEMP_a_parag, a_parag, 'paragraph')  # 保存结果
+        Paper.save_to_array(TEMP_a_shash, a_parag, 'shash')
+        # for i in a_parag:
+            # TEMP_a_parag.append(PAPER_TEMP(i["paragraph"], i["shash"]))
+        counter_a = counter_b = 0
+        for a_idx in TEMP_a_parag:
+            TEMP_b_parag = TEMP_b_shash = []
+            b_parag = mdb.all.find({"name":b_name})
+            Paper.save_to_array(TEMP_b_parag, b_parag, 'paragraph')  # 保存结果
+            Paper.save_to_array(TEMP_b_shash, b_parag, 'shash')
+            counter_a += 1
+            # for i in b_parag:
+                # TEMP_b_parag.append(PAPER_TEMP(i["paragraph"], i["shash"]))
+            for b_idx in TEMP_b_parag:
+                print('【', TEMP_a_shash[counter_a], '】【', TEMP_b_shash[counter_b], '】')
+                # item_result = hammingDis(TEMP_a_shash[counter_a], TEMP_b_shash[counter_b])
+                # item_result = hammingDis(TEMP_a_parag.shash, TEMP_b_parag.shash)
+                counter_b += 1
+                # if item_result < hamming_dis_threshold:
+                    # sim_count += 1
+                    # item_a.append(TEMP_a_parag[counter_a])
+                    # item_b.append(TEMP_b_parag[counter_b])
+                    # item.append([a_idx.paragraph, b_idx.paragraph])
+                    # print('【item: ', item, '】【item_er')
+        print('【', b_name, '】【', sim_count, '】')
+        if sim_count > 9:
+            for parag_a, parag_b in item:
+                # print(parag_a, '//', parag_b)
+                mdb.dupl_parag_details.insert(Paper.create_dupl_parag_details(a_idx.name, parag_a, b_idx.name, parag_b))
+            mdb.dupl_parag_sum.insert(Paper.create_dupl_parag_sum(a_idx.name, b_idx.name, sim_count))
+                # result_dict[b_name["name"]] = sim_count
+    dupl_sum = mdb.dupl_parag_sum.find().sort([("KEY",-1)])
+    for i in dupl_sum:
+        print('【', i["name_b"], '】【', i["dupl_with_b"], '】')
+    print("get_sim() executed!")
+
+def get_sim_bak(paper_name, db_doc_idx, db_hash, hamming_dis_threshold=5):
+    print("get_sim() starting …")
+
+    doc_name = os.listdir('./docs')
     result_dict = {}
+
     for b_key in db_doc_idx.keys():
         if a_key == b_key:
             continue
@@ -203,9 +283,10 @@ def get_sim(paper_name, db_doc_idx, db_hash, hamming_dis_threshold=5):
             result_dict[b_key] = sim_count
     
     result_dict = OrderedDict(sorted(result_dict.items(), key=lambda t: t[1], reverse=True))
-    
-    # print("get_sim() executed!")
+
+    print("get_sim() executed!")
     return result_dict
+
 
 # 两篇相似情况
 def get_sim_details(paper_name_a, paper_name_b,  
@@ -225,6 +306,7 @@ def get_sim_details(paper_name_a, paper_name_b,
     
     result_dict = OrderedDict(sorted(result_dict.items()))
     
+
     # print("get_sim_details() executed!")
     return result_dict
 
@@ -234,8 +316,8 @@ def get_sim_details(paper_name_a, paper_name_b,
 def db_load():
     print("db_load() starting …")
     global db_data, db_hash  # 全局变量
-    db_data = np.load(r'C:\Users\Administrator\Documents\duplicateChecking\Flask\app\dupl_ckg\db_data.npy')
-    db_hash = np.load(r'C:\Users\Administrator\Documents\duplicateChecking\Flask\app\dupl_ckg\db_hash.npy')
+    db_data = np.load(r'C:/Users/Administrator/Documents/duplicateChecking/Flask/app/dupl_ckg/db_data.npy')
+    db_hash = np.load(r'C:/Users/Administrator/Documents/duplicateChecking/Flask/app/dupl_ckg/db_hash.npy')
     print("db_load() executed!")
 
 '''
@@ -247,7 +329,7 @@ def result_sim(paper_name, GENERATE_PATH, target_file):
     
     global db_doc_idx # 全局变量
     db_doc_idx = get_db_doc_idx(db_data)
-    paper_name = '科协学会专家数据库的设计与实施-第3次修改.txt'
+    paper_name = '科协学会专家数据库的设计与实施-第4次修改（降重）.txt'
     result_dict = get_sim(paper_name, db_doc_idx, db_hash, hamming_dis_threshold=5)
     
     full_path = GENERATE_PATH + '\\' + target_file
@@ -297,7 +379,14 @@ def result_details(paper_name_a, paper_name_b, GENERATE_PATH, target_file):
 def result_all(paper_name, GENERATE_PATH, target_file_name):
     print("result_details() starting …")
     
-    paper_name = '科协学会专家数据库的设计与实施-第3次修改.txt'
+    # doc_name_idx = []
+    # doc_name = os.listdir('./docs')
+    # count = 1
+    # for name in doc_name:
+    #     doc_name_idx[count] = name
+    #     count += 1
+
+    paper_name = '科协学会专家数据库的设计与实施-第4次修改（降重）.txt'
     result_dict = result_sim(paper_name, GENERATE_PATH, target_file_name) 
     full_path = GENERATE_PATH + '\\' + target_file_name
     
@@ -324,7 +413,7 @@ def result_all(paper_name, GENERATE_PATH, target_file_name):
 
 def init():
     print("init() starting …")
-    db_build()  # 仅在论文库更新时再次 db_build() 和 db_save() 即可
-    db_save()
-    db_load()
+    # db_build()  # 仅在论文库更新时再次 db_build() 和 db_save() 即可
+    # db_save()
+    # db_load()
     print("init() executed!")

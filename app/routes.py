@@ -50,6 +50,11 @@ def test():
     # dupl_ckg.result_sim(paper_file_name='')
     return render_template('test.html', func_name='NULL')
 
+@app.route('/test/get_sim')
+def test_get_sim():
+    dupl_ckg.get_sim(paper_name='', hamming_dis_threshold=5)
+    return render_template('test.html', func_name='get_sim')
+
 @app.route('/test/result_sim')
 def test_result_sim():
     dupl_ckg.result_sim(paper_name='', target_file='')
@@ -76,6 +81,21 @@ def test_read():
     content = web_mod.read_file()
     return render_template('result.html', uid='0010', content=content)
 
+@app.route('/test/time')
+def test_time():
+    clock_0 = time()
+    # s1 = '0001001001001000000100100100100000010010010010000001001001001000'
+    # s2 = '1000010000100001100001000010000110000100001000011000010000100001'
+    s1 = '0010001000100010'
+    s2 = '0010001000100011'
+    for i in range(1,10000000):
+        # dupl_ckg.hammingDis(s1, s2)
+        if s1 == s2:
+            return s1
+    clock_1 = time()
+    print('success! time = ', clock_1-clock_0)
+    return render_template('test.html', func_name='time')
+
 '''
 测试 pymongo
 '''
@@ -88,7 +108,18 @@ from flk_mdb import Todo
 from time import time
 
 mongo = pymongo.MongoClient('127.0.0.1', 27017)
-mdb = mongo.todos
+mdb = mongo.test
+
+@app.route('/test/create_index')
+def test_create_index():
+    mdb.all.create_index([("name", pymongo.TEXT)])
+    # mdb.all.create_index([("name", pymongo.ASCENDING)])
+    return render_template('test.html', func_name='create_index')
+
+@app.route('/test/get_index')
+def test_get_index():
+    # mdb.all.get_index()
+    return render_template('test.html', func_name='get_index')
 
 @app.route('/todo/',methods=['GET'])
 def mdb_index():
@@ -121,3 +152,32 @@ def mdb_delete(content):
         {'content':content}
     )
     return redirect('/todo/')
+
+'''
+    测试 MongoDB
+'''
+
+from bson import json_util as jsonb
+
+# mongo = pymongo.MongoClient('127.0.0.1', 27017)
+mdb = mongo.test
+
+@app.route('/test/mdb_io')
+def test_mdb_io():
+    # temp = mdb.all.count()
+    # temp = mdb.all.find({"name":1})
+    # for line in temp:
+        # print(line)
+    # temp = np.array(mdb.all.find())
+    # for i in temp:
+    #     print(i)
+    # temp = jsonb.dumps(mdb.all.find({"shash":"0010101100000100001101111100001101010100010100110010100001111100"}))
+    temp = mdb.all.find({"name":"教育公司专家互动系统的_苗颖涵.doc.txt"})
+    count = 0
+    for i in temp:
+        print(count)
+        print(i)
+        print(i["shash"])
+        count += 1
+    content = 'success!'
+    return  render_template('mdb_test.html',content=content)
