@@ -64,12 +64,16 @@ def generate(uid):
     print(os.getcwd())
     # os.chdir(r'C:/Users/Administrator/Documents/duplicateChecking/Flask/result')	# 切换到 result 文件夹，保存查重结果
     GENERATE_PATH = r'C:/Users/Administrator/Documents/duplicateChecking/Flask/result'
-    uid = "1"
-    result_file_name = uid + '.txt'
     
+    for i in range(20,22):
+        dupl_ckg.db_load_old(i)
+        uid = str(i)
+        result_file_name = uid + '.txt'
+        content = dupl_ckg.result_all_old('', GENERATE_PATH, result_file_name)
+
     # dupl_ckg.result_sim('', GENERATE_PATH, result_file)
     # dupl_ckg.result_details('', '', GENERATE_PATH, result_file)
-    content = dupl_ckg.result_all('', GENERATE_PATH, result_file_name)
+    # content = dupl_ckg.result_all('', GENERATE_PATH, result_file_name)
     
     return content
 
