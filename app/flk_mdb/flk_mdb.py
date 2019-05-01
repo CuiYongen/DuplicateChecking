@@ -32,10 +32,10 @@ class Todo(object):
             'finished_at': None
         }
 
-class Paper(object):
+class CreateMethod(object):
     @classmethod
     # def create_mdb(cls, idx, name, paragraph, strKeyWord, shash):
-    def create_mdb(cls, idx, name, paragraph, shash):
+    def create_lib(cls, idx, name, paragraph, shash):
         return {
             'idx': idx,
             'name': name,
@@ -52,31 +52,23 @@ class Paper(object):
         }
 
     @classmethod
-    def create_dupl_parag_details(cls, idx_a, idx_b, name_a, parag_a, name_b, parag_b):
+    def create_details(cls, idx_a, idx_b, name_a, parag_a, name_b, parag_b, hamming_dis):
         return {
             'idx_a': idx_a,
             'idx_b': idx_b,
-            "name_a": name_a,
-            "parag_a": parag_a,
-            "name_b": name_b,
-            "parag_b": parag_b
+            'name_a': name_a,
+            'parag_a': parag_a,
+            'name_b': name_b,
+            'parag_b': parag_b,
+            'hamming_dis': hamming_dis
         }
 
     @classmethod
-    def create_dupl_parag_sum(cls, idx_a, idx_b, name_a, name_b, dupl_with_b):
+    def create_sum(cls, idx_a, idx_b, name_a, name_b, dupl_with_b):
         return {
             'idx_a': idx_a,
             'idx_b': idx_b,
-            "name_a": name_a,
-            "name_b": name_b,
-            "dupl_with_b": dupl_with_b
+            'name_a': name_a,
+            'name_b': name_b,
+            'dupl_with_b': dupl_with_b
         }
-
-    def save_to_array(array, cursor, field):
-        for i in cursor:
-            array.append(i[field])
-
-# class PAPER_TEMP:
-#     def __init__(self, paragraph, shash):
-#         self.paragraph = paragraph,
-#         self.shash = shash

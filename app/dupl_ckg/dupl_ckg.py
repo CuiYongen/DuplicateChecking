@@ -1,29 +1,22 @@
 # coding=utf-8
 
-'''
-    准备工作
-'''
-
 import codecs
 import numpy as np
 import jieba
 import jieba.analyse
+from collections import OrderedDict
 import os
+import pymongo
+
 import sys
 sys.path.append(r"C:/Users/Administrator/Documents/duplicateChecking/Flask/app/flk_mdb")
 from flk_mdb import *
-import pymongo
-import time
 
 mongo = pymongo.MongoClient('127.0.0.1', 27017)
-# mdb = mongo.test
 mdb = mongo.test
 
-db_data = []
-db_hash = []
-db_doc_idx = {}
-
-def hammingDis(simhash1, simhash2):  # 计算汉明距离
+# 计算汉明距离
+def hammingDis(simhash1, simhash2):
     t1 = '0b' + simhash1
     t2 = '0b' + simhash2
     n = int(t1, 2) ^ int(t2, 2)
@@ -34,6 +27,7 @@ def hammingDis(simhash1, simhash2):  # 计算汉明距离
     # print("hammingDis() executed!")
     return i
 
+# 哈希函数
 def string_hash(source):
     if source == '':
         return 0
@@ -49,7 +43,8 @@ def string_hash(source):
         x = bin(x).replace('0b', '').zfill(64)[-64:]
     # print("string_hash() executed!")
     return str(x)
-    
+
+# Simhash 算法
 def simhash(content):
     jieba.analyse.set_stop_words('./app/dupl_ckg/stopwords.txt')  # 去除停用词
     keyWord = jieba.analyse.extract_tags(
@@ -61,7 +56,7 @@ def simhash(content):
     for feature, weight in keyWord:  # 对关键词进行 hash
         # strKeyWord += str(feature) + ':' + str(weight) + ' '
         weight = int(weight * 20)
-        feature = string_hash(feature)      
+        feature = string_hash(feature)
         temp = []
         for i in feature:
             if(i == '1'):
@@ -83,36 +78,23 @@ def simhash(content):
     # return strKeyWord, simhash
     return simhash
 
-    
-'''
-    建立数据库
-'''
-    
+import time
+
+# 建立数据库
 def db_build():
-    clock_0 = time.time()
     print("db_build() starting …")
-    prepath = './docs'
-    doc_name = os.listdir(prepath)
-    # global db_data, db_hash  # 全局变量
-    # db_data = []
-    # db_hash = []
-    # doc_name_idx = []
-    # count = 0
+    clock_0 = time.time()
+    PATH_lib = 'C:/Users/Administrator/Documents/duplicateChecking/Flask/docs/lib'
+    doc_name = os.listdir(PATH_lib)
+    counter_doc = 0
     for name in doc_name:
-        # file_tmp = open(r'C:\Users\Administrator\Documents\duplicateChecking\Flask\app\dupl_ckg\simhash_time.txt', 'a')
-        # clock_0 = time.time()
-        # print(count, '\t', name)
-        # count += 1
-        mdb.idx.insert(Paper.create_idx(name))
-        # doc_name_idx.append(name)
-        txt = np.loadtxt(codecs.open(os.path.join(prepath, name), encoding=u'gb18030',errors='ignore')
+        print(counter_doc, '\t', name)
+        counter_doc += 1
+        mdb.idx.insert(CreateMethod.create_idx(counter_doc, name))
+        txt = np.loadtxt(codecs.open(os.path.join(PATH_lib, name), encoding=u'gb18030',errors='ignore')
                         , dtype=np.str, delimiter="\r\n", encoding='gb18030')
-        # txt = np.char.replace(txt, '\u3000', '')  # 去掉全角空格和制表符
-        # txt = np.char.replace(txt, '\t', '')
         for paragraph in txt:
             paragraph = paragraph.replace('\u3000', '').replace('\t', '').replace('  ', '').replace('\r', ' ')  # 去除全角空格和制表符，换行替换为空格
-            # file_tmp = open(r'C:/Users/Administrator/Documents/duplicateChecking/Flask/app/dupl_ckg/paragraph.txt', 'a', encoding='gb18030')
-            # print('【paragragh: ', paragraph, '】', file=file_tmp)
             # if paragraph == '' or paragraph == ' ' or paragraph[0].isdigit():
             if paragraph == '' or paragraph == ' ':
                 continue
@@ -122,34 +104,75 @@ def db_build():
                 # continue
             if shash == '':
                 continue
-            # db_data.append([name, paragraph, strKeyWord]) 
-            # db_data.append([name, paragraph])
-            # db_data.append([count, paragraph])
-            # db_hash.append(shash)
-            # print('【hash: ', shash, '】', file=file_tmp)
-            # file_tmp.close()
-            # mdb.test0.insert(Paper.create_mdb(name, paragraph, strKeyWord, shash))  # 保存到 MongoDB
-            mdb.all.insert(Paper.create_mdb(name, paragraph, shash))
-        # clock_1 = time.time()
-        # print(name, '\n【T】: ', clock_1-clock_0, '\n', file=file_tmp)
-    print("db_build() executed!")
+            # mdb.test0.insert(CreateMethod.create_mdb(name, paragraph, strKeyWord, shash))  # 保存到 MongoDB
+            mdb.all.insert(CreateMethod.create_lib(counter_doc, name, paragraph, shash))
     clock_1 = time.time()
-    print('【time_build: ', clock_1-clock_0, '】')
+    print("【buildtime】【", clock_1-clock_0, '】') 
+    print("db_build() executed!")
 
+# 单篇与数据库相似度
+def result_all(paper_name, hamming_dis_threshold):
+    print("get_sim() starting …")
+    clock_0 = time.time()
+    paper_name = 'GS1521FC1-何岩-康龙化成公司固定资产管理系统的设计与实施-云计算 - 第1次修改.txt'
+    name_a = paper_name
+    paper_a = mdb.idx.find_one({'name':name_a})
+    idx_a = paper_a['idx']
+    TEMP_a_parag = []
+    a_parag = mdb.all.find({'idx':idx_a})
+    for i in a_parag:  # 保存待检测的段落和哈希
+        TEMP_a_parag.append([i['paragraph'], i['shash']])
+    TEMP_name_idx = []
+    name_idx = mdb.idx.find({'idx':{'$ne':idx_a}})
+    for i in name_idx:  # 生成名字索引
+        TEMP_name_idx.append([i['idx'], i['name']])
+    for idx_b, name_b in TEMP_name_idx:
+        TEMP_b_parag = []
+        b_parag = mdb.all.find({'idx':idx_b})
+        for i in b_parag:  # 保存样本的段落和哈希
+            TEMP_b_parag.append([i['paragraph'], i['shash']])
+        sim_count = 0
+        parag_same = []
+        for a_parag, a_shash in TEMP_a_parag:
+            for b_parag, b_shash in TEMP_b_parag:
+                # counter_b += 1
+                ham_dis = hammingDis(a_shash, b_shash)
+                if ham_dis < hamming_dis_threshold:
+                    sim_count += 1
+                    parag_same.append([a_parag, b_parag, ham_dis])
+                    # print('【item: ', item, '】【item_er')
+        print('【', name_b, '】【', sim_count, '】')
+        if sim_count > 5:
+            for parag_a, parag_b, ham_dis in parag_same:
+                # print(parag_a, '//', parag_b)
+                mdb.details.insert(CreateMethod.create_details(idx_a, idx_b, name_a, parag_a, name_b, parag_b, ham_dis))
+            mdb.sum.insert(CreateMethod.create_sum(idx_a, idx_b, name_a, name_b, sim_count))
+    dupl_sum = mdb.sum.find().sort([('dupl_with_b',-1)])
+    for i in dupl_sum:
+        print('【', i['name_b'], '】【', i['dupl_with_b'], '】')
+    clock_1 = time.time()
+    print("【checktime】【", clock_1-clock_0, '】')
+    print("get_sim() executed!")
+
+
+''' old 函数，基于 npy 运行 '''
+
+db_data = []
+db_hash = []
+db_doc_idx = {}
+
+# 建立数据库
 def db_build_old(prepath, flag):
-    print("db_build() starting …")
-    # prepath = './docs'
+    print("db_build_old() starting …")
     doc_name = os.listdir(prepath)
     global db_data, db_hash  # 全局变量
     if flag == '0':
         db_data = []
         db_hash = []
-    doc_name_idx = []
     count = 0
     for name in doc_name:
         count += 1
         print(count, '\t', name)
-        doc_name_idx.append(name)
         txt = np.loadtxt(codecs.open(os.path.join(prepath, name), encoding=u'gb18030',errors='ignore')
                         , dtype=np.str, delimiter="\r\n", encoding='gb18030')
         for paragraph in txt:
@@ -163,21 +186,18 @@ def db_build_old(prepath, flag):
             if shash == '':
                 continue
             # db_data.append([name, paragraph, strKeyWord]) 
-            # db_data.append([name, paragraph])
-            db_data.append([count, paragraph])
+            db_data.append([name, paragraph])
             db_hash.append(shash)
-        if count % 62 == 0:
+        if count % 29 == 0:
             db_build_old(r'C:/Users/Administrator/Documents/duplicateChecking/Flask/docs/check', '1')
-            db_save(str(count//62))
+            db_save_old(str(count//29))
             db_data = []
             db_hash = []
-    print("db_build() executed!")
+    print("db_build_old() executed!")
 
-'''
-    存储数据库至本地，以便之后使用
-'''
-def db_save(num):
-    print("db_save() starting …")
+# 存储数据库至本地，以便之后使用
+def db_save_old(num):
+    print("db_save_old() starting …")
     global db_data, db_hash  # 全局变量
     db_data_to_save = np.array(db_data)
     db_hash_to_save = np.array(db_hash)
@@ -185,27 +205,20 @@ def db_save(num):
     PATH_hash = "./app/dupl_ckg/npy/db_hash" + num + ".npy"
     np.save(PATH_data, db_data_to_save)
     np.save(PATH_hash, db_hash_to_save)
-    # np.save("./app/dupl_ckg/db_data.npy", db_data)
-    # np.save("./app/dupl_ckg/db_hash.npy", db_hash)
-    print("db_save() executed!")
+    print("db_save_old() executed!")
 
-'''
-    论文查重 - 准备工作
-'''
+# 加载本地数据库
+def db_load_old(num):
+    print("db_load_old() starting …")
+    global db_data, db_hash  # 全局变量
+    PATH_data = 'C:/Users/Administrator/Documents/duplicateChecking/Flask/app/dupl_ckg/npy/db_data' + str(num) + '.npy'
+    PATH_hash = 'C:/Users/Administrator/Documents/duplicateChecking/Flask/app/dupl_ckg/npy/db_hash' + str(num) + '.npy'
+    db_data = np.load(PATH_data)
+    db_hash = np.load(PATH_hash)
+    print("db_load_old() executed!", num)
 
-from collections import OrderedDict
-import numpy as np
-
+# 生成索引
 def get_db_doc_idx(db_data):
-    # print("get_db_doc_idx() starting …")
-
-    # doc_name_idx = []
-    # doc_name = os.listdir('./docs')
-    # count = 0
-    # for name in doc_name:
-    #     doc_name_idx.append(name)
-    #     count += 1
-
     global db_doc_idx  # 全局变量
     db_doc_idx = {}  # 初始化 db_doc_idx
     for i in range(len(db_data)): 
@@ -222,64 +235,9 @@ def get_db_doc_idx(db_data):
     # print(db_doc_idx, '\n')
     return db_doc_idx
 
-# 单篇与数据库相似度
-def get_sim(paper_name, hamming_dis_threshold):
-    print("get_sim() starting …")
-
-    paper_name = '学号：GS1521EB1、姓名：乔珍、导师：王宝会、专业方向：互联网营销，该论文用于查重评阅，请以本版论文为准。.txt'
-    a_name = paper_name
-    TEMP_name_idx = []
-    name_idx = mdb.idx.find({"name":{"$ne":a_name}})
-    Paper.save_to_array(TEMP_name_idx, name_idx, 'name')  # 保存结果
-    # for i in name_idx:
-        # TEMP_name_idx.append(i["name"])
-    # for i in name_idx:
-        # TEMP_name_idx.append(i["name"])
-    # for i in TEMP_name_idx:
-    #     print(i)
-    for b_name in TEMP_name_idx:
-        sim_count = 0
-        item_a = item_b = []
-        TEMP_a_parag = TEMP_a_shash = []
-        a_parag = mdb.all.find({"name":a_name})
-        Paper.save_to_array(TEMP_a_parag, a_parag, 'paragraph')  # 保存结果
-        Paper.save_to_array(TEMP_a_shash, a_parag, 'shash')
-        # for i in a_parag:
-            # TEMP_a_parag.append(PAPER_TEMP(i["paragraph"], i["shash"]))
-        counter_a = counter_b = 0
-        for a_idx in TEMP_a_parag:
-            TEMP_b_parag = TEMP_b_shash = []
-            b_parag = mdb.all.find({"name":b_name})
-            Paper.save_to_array(TEMP_b_parag, b_parag, 'paragraph')  # 保存结果
-            Paper.save_to_array(TEMP_b_shash, b_parag, 'shash')
-            counter_a += 1
-            # for i in b_parag:
-                # TEMP_b_parag.append(PAPER_TEMP(i["paragraph"], i["shash"]))
-            for b_idx in TEMP_b_parag:
-                print('【', TEMP_a_shash[counter_a], '】【', TEMP_b_shash[counter_b], '】')
-                # item_result = hammingDis(TEMP_a_shash[counter_a], TEMP_b_shash[counter_b])
-                # item_result = hammingDis(TEMP_a_parag.shash, TEMP_b_parag.shash)
-                counter_b += 1
-                # if item_result < hamming_dis_threshold:
-                    # sim_count += 1
-                    # item_a.append(TEMP_a_parag[counter_a])
-                    # item_b.append(TEMP_b_parag[counter_b])
-                    # item.append([a_idx.paragraph, b_idx.paragraph])
-                    # print('【item: ', item, '】【item_er')
-        print('【', b_name, '】【', sim_count, '】')
-        if sim_count > 9:
-            for parag_a, parag_b in item:
-                # print(parag_a, '//', parag_b)
-                mdb.dupl_parag_details.insert(Paper.create_dupl_parag_details(a_idx.name, parag_a, b_idx.name, parag_b))
-            mdb.dupl_parag_sum.insert(Paper.create_dupl_parag_sum(a_idx.name, b_idx.name, sim_count))
-                # result_dict[b_name["name"]] = sim_count
-    dupl_sum = mdb.dupl_parag_sum.find().sort([("KEY",-1)])
-    for i in dupl_sum:
-        print('【', i["name_b"], '】【', i["dupl_with_b"], '】')
-    print("get_sim() executed!")
-
+# 单篇与论文库相似度排序
 def get_sim_old(paper_name, db_doc_idx, db_hash, hamming_dis_threshold=5):
-    print("get_sim() starting …")
+    print("get_sim_old() starting …")
     a_key = paper_name
     doc_name = os.listdir('./docs/lib')
     result_dict = {}
@@ -300,14 +258,11 @@ def get_sim_old(paper_name, db_doc_idx, db_hash, hamming_dis_threshold=5):
         if sim_count > 5:  # 只保存重复超过5句的文章
             result_dict[b_key] = sim_count
     result_dict = OrderedDict(sorted(result_dict.items(), key=lambda t: t[1], reverse=True))
-    print("get_sim() executed!")
+    print("get_sim_pld() executed!")
     return result_dict
 
-
 # 两篇相似情况
-def get_sim_details_old(paper_name_a, paper_name_b,  
-                    db_doc_idx, db_hash, db_data, hamming_dis_threshold=5,
-                    print_details='short'):
+def get_sim_details_old(paper_name_a, paper_name_b,  db_doc_idx, db_hash, db_data, hamming_dis_threshold=5):
     # print("get_sim_details_old() starting …")
     a_key = paper_name_a
     b_key = paper_name_b
@@ -319,29 +274,16 @@ def get_sim_details_old(paper_name_a, paper_name_b,
                 if item_sim not in result_dict.keys():
                     result_dict[item_sim] = []
                 result_dict[item_sim].append([db_data[a_idx], db_data[b_idx]])
-    
     result_dict = OrderedDict(sorted(result_dict.items()))
-    
-
     # print("get_sim_details_old() executed!")
     return result_dict
-
-# 加载本地数据库
-def db_load_old(num):
-    print("db_load_old() starting …")
-    global db_data, db_hash  # 全局变量
-    PATH_data = 'C:/Users/Administrator/Documents/duplicateChecking/Flask/app/dupl_ckg/npy/db_data' + str(num) + '.npy'
-    PATH_hash = 'C:/Users/Administrator/Documents/duplicateChecking/Flask/app/dupl_ckg/npy/db_hash' + str(num) + '.npy'
-    db_data = np.load(PATH_data)
-    db_hash = np.load(PATH_hash)
-    print("db_load_old() executed!", num)
 
 # 计算单篇论文与存在相似关系的论文的相似度；值越大，越相似
 def result_sim_old(paper_name, GENERATE_PATH, target_file):
     print("result_sim_old() starting …")
     global db_doc_idx # 全局变量
     db_doc_idx = get_db_doc_idx(db_data)
-    paper_name = '学号：GS1521EB1、姓名：乔珍、导师：王宝会、专业方向：互联网营销，该论文用于查重评阅，请以本版论文为准。.txt'
+    paper_name = 'GS1521FC1-何岩-康龙化成公司固定资产管理系统的设计与实施-云计算 - 第1次修改.txt'
     result_dict = get_sim_old(paper_name, db_doc_idx, db_hash, hamming_dis_threshold=5)
     full_path = GENERATE_PATH + '\\' + target_file
     file = open(full_path, 'a')
@@ -374,7 +316,7 @@ def result_details_old(paper_name_a, paper_name_b, GENERATE_PATH, target_file):
 # 结合 result_sim_old 和 result_details_old，按相似度排序，打印相似段落
 def result_all_old(paper_name, GENERATE_PATH, target_file_name):
     print("result_details_old() starting …")
-    paper_name = '学号：GS1521EB1、姓名：乔珍、导师：王宝会、专业方向：互联网营销，该论文用于查重评阅，请以本版论文为准。.txt'
+    paper_name = 'GS1521FC1-何岩-康龙化成公司固定资产管理系统的设计与实施-云计算 - 第1次修改.txt'
     result_dict = result_sim_old(paper_name, GENERATE_PATH, target_file_name) 
     full_path = GENERATE_PATH + '\\' + target_file_name
     counter = 1
@@ -392,10 +334,9 @@ def result_all_old(paper_name, GENERATE_PATH, target_file_name):
     return content
 
 # 初始化数据库
-def init():
+def init():  # 仅在论文库更新时再次 db_build() 和 db_save_old() 即可
     print("init() starting …")
-    db_build_old(prepath=r'C:/Users/Administrator/Documents/duplicateChecking/Flask/docs/lib'
-                , flag='0')  # 仅在论文库更新时再次 db_build() 和 db_save() 即可
-    # db_save('')
+    db_build_old(prepath=r'C:/Users/Administrator/Documents/duplicateChecking/Flask/docs/lib', flag='0')
+    # db_save_old('')
     # db_load_old()
     print("init() executed!")

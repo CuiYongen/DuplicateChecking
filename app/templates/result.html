@@ -7,6 +7,18 @@
 <body>
     <h1> {{ uid }} </h1>
     <h1> 查重结果 </h1>
-	<p> {{ content | safe }} </p>
+    <p>
+    	<br/> 文章 1 重复率：30% （15句重复）
+    	<br/> 文章 2 重复率：17% （3句重复）
+	<!-- <p> {{ content | safe }} </p> -->
+	<p>
+		<br/> hammingDis 1（10句） | hammingDis 2（3句） | hammingDis 3（2句）
+		<br/>
+		{% for a, b in result_details %}
+		<br/> <font color="red"> {{ a }} </font>
+		<br/> <font color="blue"> {{ b }} </font>
+		<br/>
+		{% endfor %}
+	</p>
 </body>
 </html>

@@ -14,7 +14,7 @@ def index():
 '''
 
 import sys
-sys.path.append(r"C:\Users\Administrator\Documents\duplicateChecking\Flask\app\web_mod")
+sys.path.append(r"C:/Users/Administrator/Documents/duplicateChecking/Flask/app/web_mod")
 import web_mod
 
 @app.route('/upload', methods=['GET', 'POST'])
@@ -27,7 +27,7 @@ def upload():	# 用户上传文件时，根据 ID 或时间生成用户个人文
 '''
 '''
 
-sys.path.append(r"C:\Users\Administrator\Documents\duplicateChecking\Flask\app\dupl_ckg")
+sys.path.append(r"C:/Users/Administrator/Documents/duplicateChecking/Flask/app/dupl_ckg")
 import dupl_ckg
 
 @app.route('/result')
@@ -42,32 +42,21 @@ def result():
     
 @app.route('/init')
 def init():
-    dupl_ckg.init()
+    dupl_ckg.db_build()
     return render_template('index.html')
 
 @app.route('/test')
 def test():
     # dupl_ckg.result_sim(paper_file_name='')
-    return render_template('test.html', func_name='NULL')
+    result_temp = mdb.details.find().sort([('hammingDis',-1)])
+    result_details = []
+    for i in result_temp:
+        result_details.append([i['parag_a'], i['parag_b']])
+    return render_template('result.html', uid='0001', result_details=result_details)
 
-@app.route('/test/get_sim')
-def test_get_sim():
-    dupl_ckg.get_sim(paper_name='', hamming_dis_threshold=5)
-    return render_template('test.html', func_name='get_sim')
-
-@app.route('/test/result_sim')
-def test_result_sim():
-    dupl_ckg.result_sim(paper_name='', target_file='')
-    return render_template('test.html', func_name='result_sim')
-    
-@app.route('/test/result_details')
-def test_result_details():
-    dupl_ckg.result_details(paper_name_a='', paper_name_b='')
-    return render_template('test.html', func_name='result_details')
-    
 @app.route('/test/result_all')
 def test_result_all():
-    dupl_ckg.result_all(paper_name='')
+    dupl_ckg.result_all(paper_name='', hamming_dis_threshold=3)
     return render_template('test.html', func_name='result_all')
     
 @app.route('/test/generate')
@@ -100,7 +89,7 @@ def test_time():
 测试 pymongo
 '''
 
-sys.path.append(r"C:\Users\Administrator\Documents\duplicateChecking\Flask\app\flk_mdb")
+sys.path.append(r"C:/Users/Administrator/Documents/duplicateChecking/Flask/app/flk_mdb")
 import flk_mdb
 import pymongo
 from flask import request, redirect, url_for
@@ -153,31 +142,8 @@ def mdb_delete(content):
     )
     return redirect('/todo/')
 
-'''
-    测试 MongoDB
-'''
+''' Flask + Vue 测试 '''
 
-from bson import json_util as jsonb
-
-# mongo = pymongo.MongoClient('127.0.0.1', 27017)
-mdb = mongo.test
-
-@app.route('/test/mdb_io')
-def test_mdb_io():
-    # temp = mdb.all.count()
-    # temp = mdb.all.find({"name":1})
-    # for line in temp:
-        # print(line)
-    # temp = np.array(mdb.all.find())
-    # for i in temp:
-    #     print(i)
-    # temp = jsonb.dumps(mdb.all.find({"shash":"0010101100000100001101111100001101010100010100110010100001111100"}))
-    temp = mdb.all.find({"name":"教育公司专家互动系统的_苗颖涵.doc.txt"})
-    count = 0
-    for i in temp:
-        print(count)
-        print(i)
-        print(i["shash"])
-        count += 1
-    content = 'success!'
-    return  render_template('mdb_test.html',content=content)
+@app.route('/todovue')
+def index_todovue():
+    return render_template('formdata_vue.html')
