@@ -1,11 +1,113 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title> 首页 - 论文查重系统 </title>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title> 论文查重系统 </title>
+    <script src="https://cdn.staticfile.org/jquery/2.1.1/jquery.min.js"></script>
+    <script src="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/js/toastr.min.js" ></script>
 </head>
 <body>
-	<h1> <text onclick="location.href = 'upload'"> 上传文件 </text> </h1>
-	<h1> <text onclick="location.href = 'result'"> 查看结果  </text> </h1>
+
+<script type="text/javascript"> toastr.options.positionClass = 'toast-top-center'; </script>
+
+<div class="container">
+    <div class="row">
+
+    <div class="col-md-12 col-sm-12 col-xs-12"> <br/> <h1 style="font-weight: 900"> 一、论文库上传 </h1> <br/> </div>
+    <form action="" enctype='multipart/form-data' method='POST'>
+    <div class="col-md-5 col-sm-5 col-xs-5">
+        <button href="javascript:;" class="btn-block btn-lg btn-default" style="font-weight:900; position:relative;"> 1. 选择论文库文件
+            <input type="file" multiple="" name="file_lib[]" style="position:absolute; overflow:hidden; right:0;top:0;opacity:0;">
+        </button> <br/>
+    </div>
+    <div class="col-md-5 col-sm-5 col-xs-5">
+        <input type="submit" value="2. 点击上传" style='font-weight:900' class="btn-block btn-lg btn-default" id="upload">
+        <script type="text/javascript">
+            $(function upload_message() {
+                $('#upload').click(function() {
+                    toastr.success('上传成功！');
+                }
+            });
+        </script> <br/>
+    </div>
+    </form>
+    <div class="col-md-2 col-sm-2 col-xs-2">
+        <button onclick="location.href='reset_lib'" class="btn-block btn-lg btn-danger" style="font-weight:900"> 重置 </button>
+    </div>
+
+    <div class="col-md-12 col-sm-12 col-xs-12"> <br/> <h1 style="font-weight: 900"> 二、初始化论文库 </h1> <br/> </div>
+    <div class="col-md-10 col-sm-10 col-xs-10">
+        <button onclick="location.href='init'" class="btn-block btn-lg btn-primary" style="font-weight:900"> 点击开始初始化 </button> <br/>
+    </div>
+    <div class="col-md-2 col-sm-2 col-xs-2">
+        <button onclick="location.href='/'" class="btn-block btn-lg btn-danger" style="font-weight:900"> 停止 </button>
+    </div>
+
+    <div class="col-md-12 col-sm-12 col-xs-12"> <br/> <h1 style="font-weight: 900"> 三、待检测论文上传 </h1> <br/> </div>
+    <form action="" enctype='multipart/form-data' method='POST'>
+    <div class="col-md-5 col-sm-5 col-xs-5">
+        <button href="javascript:;" class="btn-block btn-lg btn-default" style="font-weight:900; position:relative;"> 1. 选择待检测论文
+            <input type="file" multiple="" name="file_check[]" style="position:absolute; overflow:hidden; right:0;top:0;opacity:0;">
+        </button> <br/>
+    </div>
+    <div class="col-md-5 col-sm-5 col-xs-5">
+        <input type="submit" value="2. 点击上传" style='font-weight:900' class="btn-block btn-lg btn-default"> <br/>
+    </div>
+    </form>
+    <div class="col-md-2 col-sm-2 col-xs-2">
+        <button onclick="location.href='reset_check'" class="btn-block btn-lg btn-danger" style="font-weight:900"> 重置 </button>
+    </div>
+
+    <div class="col-md-12 col-sm-12 col-xs-12"> <br/> <h1 style="font-weight: 900"> 四、提交查重操作 </h1> <br/> </div>
+    <div class="col-md-10 col-sm-10 col-xs-10">
+        <button onclick="location.href='result_all'" class="btn-block btn-lg btn-primary" style="font-weight:900"> 点击开始查重 </button> <br/>
+    </div>
+    <div class="col-md-2 col-sm-2 col-xs-2">
+        <button onclick="location.href='//'" class="btn-block btn-lg btn-danger" style="font-weight:900"> 停止 </button>
+    </div>
+
+    <div class="col-md-12 col-sm-12 col-xs-12"> <br/> <h1 style="font-weight: 900"> 五、查看结果 </h1> <br/> </div>
+    <div class="col-md-12 col-sm-12 col-xs-12">
+    <button onclick="location.href='result'" class="btn-block btn-lg btn-primary" style="font-weight:900"> 点击查看结果 </button> <br/>
+    </div>
+
+    </div>
 </body>
 </html>
+
+<script type="text/javascript">
+    $(function() {
+
+        //设置显示配置
+        var messageOpts = {
+            "closeButton" : false,//是否显示关闭按钮
+            "debug" : false,//是否使用debug模式
+            "positionClass" : "toast-top-center",//弹出窗的位置
+            "onclick" : null,
+            "showDuration" : "300",//显示的动画时间
+            "hideDuration" : "1000",//消失的动画时间
+            "timeOut" : "1500",//展现时间
+            "showEasing" : "swing",//显示时的动画缓冲方式
+            "hideEasing" : "linear",//消失时的动画缓冲方式
+            "showMethod" : "fadeIn",//显示时的动画方式
+            "hideMethod" : "fadeOut" //消失时的动画方式
+        };
+        toastr.options = messageOpts;
+
+        $('#showtoast').click(function() { toastr.info('内容1'); });
+        $('#showtoastsuccess').click(function() { toastr.success('内容success', '标题success'); });
+        $('#showtoasterror').click(function() { toastr.error('内容error', '标题error'); });
+        $('#showtoastwarning').click(function() { toastr.warning('内容warning', '标题warning'); });
+        $('#cleartoasts').click(function() { toastr.clear(); });
+        $('#removetoasts').click(function() { toastr.remove(); });
+
+        $('#upload').click(function() { toastr.success('上传成功！'); });
+
+    })
+</script>

@@ -1,24 +1,52 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <title> 结果 - 在线论文查重系统 </title>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title> 查重报告 </title>
+    <script src="https://cdn.staticfile.org/jquery/2.1.1/jquery.min.js"></script>
+    <script src="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
 </head>
 <body>
-    <h1> {{ uid }} </h1>
-    <h1> 查重结果 </h1>
-    <p>
-    	<br/> 文章 1 重复率：30% （15句重复）
-    	<br/> 文章 2 重复率：17% （3句重复）
-	<!-- <p> {{ content | safe }} </p> -->
-	<p>
-		<br/> hammingDis 1（10句） | hammingDis 2（3句） | hammingDis 3（2句）
-		<br/>
-		{% for a, b in result_details %}
-		<br/> <font color="red"> {{ a }} </font>
-		<br/> <font color="blue"> {{ b }} </font>
-		<br/>
-		{% endfor %}
-	</p>
+<div class="container">
+<div class="row"> <div class="col-md-12 col-sm-12 col-xs-12">
+    <h1 style="text-align:center;font-weight:900"> 查重报告 </h1> <br/>
+    <blockquote>
+        <b> <font color="grey"> {{ name_a }} </font> </b>
+    </blockquote>
+
+    <table class="table table-bordered table-striped" style="table-layout:fixed;">
+        <thead> <tr>
+            <th class="col-md-1 col-sm-1 col-xs-1"> No. </th>
+            <th class="col-md-3 col-sm-3 col-xs-3"> 检测结果 </th>
+            <th class="col-md-7 col-sm-7 col-xs-7"> 论文名称 </th>
+        </tr> </thead>
+        {% for idx, name, sim_count, plagiarism_rate in file_name %}
+        <tr>
+            <th> {{ idx }} </th>
+            <th> <font color="red"> {{ plagiarism_rate }}% </font>, {{ sim_count }}句重复 </th>
+            <th style="overflow:hidden;white-space:nowrap;text-overflow:ellipsis;"> {{ name }} </th>
+        {% endfor %}
+    </tr> </table> <br/>
+
+    <table class="table table-bordered table-striped">
+        <thead> <tr> <th>
+            <font color="DarkSlateBlue"> {{ name_a }} </font>
+            <br/> <font color="Crimson"> {{ name_b }} </font>
+        </th> </tr> </thead>
+        {% for parag_a, parag_b in result_details %}
+        <tr> <td>
+            <font color="DarkSlateBlue"> {{ parag_a }} </font>
+            <br/>
+            <font color="Crimson"> {{ parag_b }} </font>
+        {% endfor %}
+    </td> </tr> </table>
+
+        <!-- <br/> 查看全部 | 相似度 3（10句） | 相似度 2（3句） | 相似度 1（2句） -->
+        <!-- <br/> -->
+</div></div></div>
 </body>
 </html>

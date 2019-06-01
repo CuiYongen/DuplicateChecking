@@ -1,8 +1,19 @@
 # coding=utf-8
 
 import os
-from flask import Flask, flash, request, redirect, url_for
+import sys
+from flask import Flask, flash, request, redirect, url_for, render_template
 from werkzeug.utils import secure_filename
+
+sys.path.append(r"C:/Users/Administrator/Documents/duplicateChecking/Flask/app/flk_mdb")
+import flk_mdb
+import pymongo
+from flask import request, redirect, url_for
+from flk_mdb import Todo
+from time import time
+
+mongo = pymongo.MongoClient('127.0.0.1', 27017)
+mdb = mongo.test
 
 ''' 检查文件合法性 '''
 
@@ -15,18 +26,18 @@ def allowed_file(filename):
 ''' 上传文件 '''
 def upload_file():
     if request.method == 'POST':
-        if 'file' not in request.files:
-            flash('No file part')
-            return redirect(request.url)
-        file = request.files['file']
-        if file.filename == '':
-            flash('No selected file')
-        if file and allowed_file(file.filename):
+        files = request.files.getlist("file_lib[]")
+        for file in files:
             filename = file.filename  # 安全获取：secure_filename(file.filename)
-            UPLOAD_PATH = os.path.join(os.getcwd(), "./docs", filename)  # 返回上级目录，进入 /docs
+            UPLOAD_PATH = 'C:/Users/Administrator/Documents/duplicateChecking/Flask/docs/lib/'+ filename
             file.save(UPLOAD_PATH)
-        # return render_template('./result/user_xxx.html', uid='')
-        
+        files = request.files.getlist("file_check[]")
+        for file in files:
+            filename = file.filename  # 安全获取：secure_filename(file.filename)
+            UPLOAD_PATH = 'C:/Users/Administrator/Documents/duplicateChecking/Flask/docs/check/'+ filename
+            file.save(UPLOAD_PATH)
+        mdb.test.remove({})
+
 ''' 读取文件 '''
 def read_file():
     file = open(r"C:/Users/Administrator/Documents/duplicateChecking/Flask/result/科协学会专家数据库的设计与实施-第4次修改（降重）.txt", "rb")
@@ -59,3 +70,36 @@ def generate_old(uid):
         result_file_name = uid + '.txt'
         content = dupl_ckg.result_all_old('', GENERATE_PATH, result_file_name)
     return content
+
+
+''' 登陆 '''
+
+from flask_login import UserMixin
+
+class User(UserMixin):
+    pass
+
+users = [
+    {'id':'Tom', 'username': 'Tom', 'password': '111111'},
+    {'id':'Michael', 'username': 'Michael', 'password': '123456'}
+]
+
+def query_user(user_id):
+    for user in users:
+        if user_id == user['id']:
+            return user
+
+# from flask_login import LoginManager
+
+# login_manager = LoginManager()
+# login_manager.login_view = 'login'
+# login_manager.login_message_category = 'info'
+# login_manager.login_message = 'Access denied.'
+# login_manager.init_app(app)
+
+# @login_manager.user_loader
+# def load_user(user_id):
+#     if query_user(user_id) is not None:
+#         curr_user = User()
+#         curr_user.id = user_id
+#         return curr_user

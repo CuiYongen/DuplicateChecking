@@ -64,11 +64,12 @@ class CreateMethod(object):
         }
 
     @classmethod
-    def create_sum(cls, idx_a, idx_b, name_a, name_b, dupl_with_b):
+    def create_sum(cls, idx_a, idx_b, name_a, name_b, dupl_with_b, plagiarism_rate):
         return {
             'idx_a': idx_a,
             'idx_b': idx_b,
             'name_a': name_a,
             'name_b': name_b,
-            'dupl_with_b': dupl_with_b
+            'dupl_with_b': dupl_with_b,
+            'plagiarism_rate': plagiarism_rate
         }

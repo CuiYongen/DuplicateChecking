@@ -24,7 +24,6 @@ def hammingDis(simhash1, simhash2):
     while n:
         n &= (n-1)
         i += 1
-    # print("hammingDis() executed!")
     return i
 
 # 哈希函数
@@ -41,7 +40,6 @@ def string_hash(source):
         if x == -1:
             x = -2
         x = bin(x).replace('0b', '').zfill(64)[-64:]
-    # print("string_hash() executed!")
     return str(x)
 
 # Simhash 算法
@@ -52,9 +50,7 @@ def simhash(content):
     if len(keyWord) < 6:  # 少于5个词放弃这个句子
         return ''
     keyList = []
-    # strKeyWord = ''
     for feature, weight in keyWord:  # 对关键词进行 hash
-        # strKeyWord += str(feature) + ':' + str(weight) + ' '
         weight = int(weight * 20)
         feature = string_hash(feature)
         temp = []
@@ -67,7 +63,6 @@ def simhash(content):
         keyList.append(temp)
     list1 = np.sum(np.array(keyList), axis=0)
     if(keyList == []):  # 编码读不出来
-        # return strKeyWord, '00'
         return '00'
     simhash = ''
     for i in list1:  # 权值转换成 hash 值
@@ -75,49 +70,46 @@ def simhash(content):
             simhash = simhash + '1'
         else:
             simhash = simhash + '0'
-    # return strKeyWord, simhash
     return simhash
 
-import time
+import time  # 不知道为什么写在开头会报错，提示找不到这个库，写在这里就不会……
 
-# 建立数据库
-def db_build():
-    print("db_build() starting …")
+# 初始化，将论文的名称/片段/Simhash保存到数据库
+def init(path):
+    print("init() starting …")
     clock_0 = time.time()
-    PATH_lib = 'C:/Users/Administrator/Documents/duplicateChecking/Flask/docs/lib'
+    PATH_lib = 'C:/Users/Administrator/Documents/duplicateChecking/Flask/docs/' + path
     doc_name = os.listdir(PATH_lib)
     counter_doc = 0
+    if path == 'check':
+        counter_doc -= 1
     for name in doc_name:
         print(counter_doc, '\t', name)
         counter_doc += 1
-        mdb.idx.insert(CreateMethod.create_idx(counter_doc, name))
+        mdb.idx.insert(CreateMethod.create_idx(counter_doc, name))  # 生成论文索引
         txt = np.loadtxt(codecs.open(os.path.join(PATH_lib, name), encoding=u'gb18030',errors='ignore')
                         , dtype=np.str, delimiter="\r\n", encoding='gb18030')
         for paragraph in txt:
             paragraph = paragraph.replace('\u3000', '').replace('\t', '').replace('  ', '').replace('\r', ' ')  # 去除全角空格和制表符，换行替换为空格
-            # if paragraph == '' or paragraph == ' ' or paragraph[0].isdigit():
             if paragraph == '' or paragraph == ' ':
                 continue
-            # strKeyWord, shash = simhash(paragraph)
             shash = simhash(paragraph)
-            # if strKeyWord == '':
-                # continue
             if shash == '':
                 continue
-            # mdb.test0.insert(CreateMethod.create_mdb(name, paragraph, strKeyWord, shash))  # 保存到 MongoDB
             mdb.all.insert(CreateMethod.create_lib(counter_doc, name, paragraph, shash))
     clock_1 = time.time()
-    print("【buildtime】【", clock_1-clock_0, '】') 
-    print("db_build() executed!")
+    print("【init time】【", clock_1-clock_0, '】') 
+    print("init() executed!")
 
-# 单篇与数据库相似度
+# 计算相似度，并保存相关信息到数据库
 def result_all(paper_name, hamming_dis_threshold):
     print("get_sim() starting …")
     clock_0 = time.time()
-    paper_name = 'GS1521FC1-何岩-康龙化成公司固定资产管理系统的设计与实施-云计算 - 第1次修改.txt'
-    name_a = paper_name
-    paper_a = mdb.idx.find_one({'name':name_a})
-    idx_a = paper_a['idx']
+    init('check')
+    paper_a = mdb.idx.find_one({'idx':0})
+    name_a = paper_a['name']
+    paper_name = name_a
+    idx_a = paper_a['idx']  # idx = 0
     TEMP_a_parag = []
     a_parag = mdb.all.find({'idx':idx_a})
     for i in a_parag:  # 保存待检测的段落和哈希
@@ -131,8 +123,8 @@ def result_all(paper_name, hamming_dis_threshold):
         b_parag = mdb.all.find({'idx':idx_b})
         for i in b_parag:  # 保存样本的段落和哈希
             TEMP_b_parag.append([i['paragraph'], i['shash']])
-        sim_count = 0
-        parag_same = []
+        sim_count = 0  # 重复句子总数
+        parag_same = []  # 相似段落集合
         for a_parag, a_shash in TEMP_a_parag:
             for b_parag, b_shash in TEMP_b_parag:
                 # counter_b += 1
@@ -143,10 +135,17 @@ def result_all(paper_name, hamming_dis_threshold):
                     # print('【item: ', item, '】【item_er')
         print('【', name_b, '】【', sim_count, '】')
         if sim_count > 5:
+            length_sum = 0  # 重复字符总数
             for parag_a, parag_b, ham_dis in parag_same:
                 # print(parag_a, '//', parag_b)
-                mdb.details.insert(CreateMethod.create_details(idx_a, idx_b, name_a, parag_a, name_b, parag_b, ham_dis))
-            mdb.sum.insert(CreateMethod.create_sum(idx_a, idx_b, name_a, name_b, sim_count))
+                mdb.details.insert(CreateMethod.create_details(idx_a, idx_b, name_a, parag_a, name_b, parag_b, ham_dis))  # 保存相似详情
+                length_sum += len(parag_a)
+            print(paper_name)
+            file_tmp = open(r'C:/Users/Administrator/Documents/duplicateChecking/Flask/docs/check/'+paper_name)
+            length_all = len(file_tmp.read().strip())  # 待检测论文总字数
+            file_tmp.close()
+            plagiarism_rate = length_sum/length_all*100  # 计算重复率
+            mdb.sum.insert(CreateMethod.create_sum(idx_a, idx_b, name_a, name_b, sim_count, plagiarism_rate))  # 保存相似结果
     dupl_sum = mdb.sum.find().sort([('dupl_with_b',-1)])
     for i in dupl_sum:
         print('【', i['name_b'], '】【', i['dupl_with_b'], '】')
@@ -154,8 +153,18 @@ def result_all(paper_name, hamming_dis_threshold):
     print("【checktime】【", clock_1-clock_0, '】')
     print("get_sim() executed!")
 
+# def plagiarism_rate(path):
+#     file_tmp = open(path)
+#     length = len(file_tmp.read().strip())
+#     file_tmp.close()
 
-''' old 函数，基于 npy 运行 '''
+
+
+#=======================
+#
+# old 函数，基于 npy 运行
+#
+#=======================
 
 db_data = []
 db_hash = []
@@ -334,7 +343,7 @@ def result_all_old(paper_name, GENERATE_PATH, target_file_name):
     return content
 
 # 初始化数据库
-def init():  # 仅在论文库更新时再次 db_build() 和 db_save_old() 即可
+def init_old():  # 仅在论文库更新时再次 db_build() 和 db_save_old() 即可
     print("init() starting …")
     db_build_old(prepath=r'C:/Users/Administrator/Documents/duplicateChecking/Flask/docs/lib', flag='0')
     # db_save_old('')

@@ -1,28 +1,30 @@
 # coding=utf-8
 
 #导入模板模块
-from flask import render_template
+from flask import render_template, flash
 from app import app
-
-@app.route('/')
-
-@app.route('/index')
-def index():
-	return render_template('index.html')
-
-'''
-'''
+import os
+import shutil
 
 import sys
 sys.path.append(r"C:/Users/Administrator/Documents/duplicateChecking/Flask/app/web_mod")
 import web_mod
 
+@app.route('/', methods=['GET', 'POST'])
+@app.route('/index', methods=['GET', 'POST'])
+def index():
+    web_mod.upload_file()
+    return render_template('index.html')
+
 @app.route('/upload', methods=['GET', 'POST'])
 def upload():	# 用户上传文件时，根据 ID 或时间生成用户个人文件夹，用于保存论文和查重结果。用户可单独访问个人网址，相当于登陆功能
-    web_mod.upload_file()
-    # web_mod.create_result(uid='user_123')
-    # 上传文件后就应该开始比对了，这里应该传参 paper_file_name，执行 
+    web_mod.upload_file() 
     return render_template('upload.html')
+
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    UPLOAD_PATH = r'C:/Users/Administrator/Documents/duplicateChecking/Flask/docs/lib/'
+    return send_from_directory(UPLOAD_PATH, filename)
 
 '''
 '''
@@ -30,34 +32,66 @@ def upload():	# 用户上传文件时，根据 ID 或时间生成用户个人文
 sys.path.append(r"C:/Users/Administrator/Documents/duplicateChecking/Flask/app/dupl_ckg")
 import dupl_ckg
 
+# 使用 npy 模式下的查看结果
+# @app.route('/result')
+# def result():
+#     content = web_mod.read_file()
+#     return render_template('result.html', uid=uid, content=content)
+
 @app.route('/result')
 def result():
-    # dupl_ckg.debug_import()  # 测试 dupl_ckg 模块是否导入
-    # dupl_ckg.result_sim(paper_file_name='')  # 计算单篇论文与数据库相似度
-	# dupl_ckg.result_details(paper_a='', paper_b='')  # 计算两篇论文相似度及详情
-    # return render_template('userid.html', userid=, )  # 为每个用户生成结果页（尚未完成）
-    uid = '0010'  # 为用户生成唯一 uid
-    content = web_mod.read_file()
-    return render_template('result.html', uid=uid, content=content)
-    
-@app.route('/init')
-def init():
-    dupl_ckg.db_build()
-    return render_template('index.html')
-
-@app.route('/test')
-def test():
-    # dupl_ckg.result_sim(paper_file_name='')
+    paper_a = mdb.idx.find_one({'idx':0})
+    name_a = paper_a['name']
+    file_name_temp = mdb.sum.find().sort([('dupl_with_b', -1)])
+    file_name = []
+    file_name_counter = 1
+    for i in file_name_temp:
+        file_name.append([file_name_counter, i['name_b'], i['dupl_with_b'], round(i['plagiarism_rate'],2)])
+        file_name_counter += 1
+    name_b = file_name[0][1]
     result_temp = mdb.details.find().sort([('hammingDis',-1)])
     result_details = []
     for i in result_temp:
         result_details.append([i['parag_a'], i['parag_b']])
-    return render_template('result.html', uid='0001', result_details=result_details)
+    return render_template('result.html', file_name=file_name, result_details=result_details, name_a=name_a, name_b=name_b)
 
-@app.route('/test/result_all')
-def test_result_all():
+    
+@app.route('/init')
+def init():
+    dupl_ckg.init(path='lib')
+    return redirect('/')
+
+@app.route('/reset_lib')
+def reset_lib():
+    mongo.drop_database("test")
+    shutil.rmtree(r'C:/Users/Administrator/Documents/duplicateChecking/Flask/docs/lib', False)
+    os.mkdir(r'C:/Users/Administrator/Documents/duplicateChecking/Flask/docs/lib')
+    return redirect('/')
+
+@app.route('/reset_check')
+def reset_check():
+    shutil.rmtree(r'C:/Users/Administrator/Documents/duplicateChecking/Flask/docs/check', False)
+    os.mkdir(r'C:/Users/Administrator/Documents/duplicateChecking/Flask/docs/check')
+    return redirect('/')
+
+@app.route('/test')
+def test():
+    file_name_temp = mdb.sum.find().sort([('dupl_with_b', -1)])
+    file_name = []
+    file_name_counter = 1
+    for i in file_name_temp:
+        file_name.append([file_name_counter, i['name_b'], i['dupl_with_b'], round(i['plagiarism_rate'],2)])
+        file_name_counter += 1
+    result_temp = mdb.details.find().sort([('hammingDis',-1)])
+    result_details = []
+    for i in result_temp:
+        result_details.append([i['parag_a'], i['parag_b']])
+    return render_template('result.html', uid='0001', file_name=file_name, result_details=result_details)
+
+@app.route('/result_all')
+def result_all():
     dupl_ckg.result_all(paper_name='', hamming_dis_threshold=3)
-    return render_template('test.html', func_name='result_all')
+    return redirect('result')
     
 @app.route('/test/generate')
 def test_generate():
@@ -84,6 +118,51 @@ def test_time():
     clock_1 = time()
     print('success! time = ', clock_1-clock_0)
     return render_template('test.html', func_name='time')
+
+import numpy as np
+@app.route('/test/test')
+def test_test():
+    file_tmp = open(r"C:/Users/Administrator/Documents/duplicateChecking/Flask/result/1.txt", "r")
+    txt_to_calculate = file_tmp.read().strip()
+    length = len(txt_to_calculate)
+    print(txt_to_calculate)
+    print(length)
+    file_tmp.close()
+    return render_template('test.html', func_name='test')
+
+
+#=========================================
+
+#=========================================
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        uid_imput = request.form.get('userid')
+        password_imput = request.form.get('password')
+        if uid_imput == '' or password_imput == '':
+            print("输入不完整！")
+        user = mdb.user.find_one({'uid':uid_imput})
+        if password_imput == user['password']:
+            print("登陆成功！")
+            return redirect(url_for('index'))
+        else:
+            print("密码错误！")
+        # if user is not None and request.form['password'] == user['password']:
+        #     curr_user = web_mod.User()
+        #     curr_user.id = user_id
+        #     login_user(curr_user)  # 通过Flask-Login的login_user方法登录用户
+        #     return redirect(url_for('index'))
+        # print('Wrong username or password!')
+
+    # GET 请求
+    return render_template('login.html')
+
+# @app.route('/logout')
+# @login_required
+# def logout():
+#     logout_user()
+#     return 'Logged out successfully!'
 
 '''
 测试 pymongo
