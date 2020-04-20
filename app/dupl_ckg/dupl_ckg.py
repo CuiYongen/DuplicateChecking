@@ -153,12 +153,6 @@ def result_all(paper_name, hamming_dis_threshold):
     print("【checktime】【", clock_1-clock_0, '】')
     print("get_sim() executed!")
 
-# def plagiarism_rate(path):
-#     file_tmp = open(path)
-#     length = len(file_tmp.read().strip())
-#     file_tmp.close()
-
-
 
 #=======================
 #

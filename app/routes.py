@@ -72,6 +72,9 @@ def reset_lib():
 def reset_check():
     shutil.rmtree(r'C:/Users/Administrator/Documents/duplicateChecking/Flask/docs/check', False)
     os.mkdir(r'C:/Users/Administrator/Documents/duplicateChecking/Flask/docs/check')
+    mdb.details.drop()
+    mdb.sum.drop()
+    mdb.idx.delete_many({"idx":"0"})
     return redirect('/')
 
 @app.route('/test')

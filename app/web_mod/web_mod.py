@@ -36,7 +36,6 @@ def upload_file():
             filename = file.filename  # 安全获取：secure_filename(file.filename)
             UPLOAD_PATH = 'C:/Users/Administrator/Documents/duplicateChecking/Flask/docs/check/'+ filename
             file.save(UPLOAD_PATH)
-        mdb.test.remove({})
 
 ''' 读取文件 '''
 def read_file():
